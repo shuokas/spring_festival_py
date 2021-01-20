@@ -17,7 +17,7 @@ def swap_page():
     f = excute(ims, sex, major, degree)
     img_stream = base64.b64encode(f.getvalue()).decode()
     recognize_info = {'code': 200 ,'message': '请求成功','data': {'img': img_stream}}
-    return jsonify(recognize_info), 201
+    return jsonify(recognize_info), 200
     # return render_template('result.html', img_stream=img_stream)
 
 @app.route('/')
@@ -28,7 +28,7 @@ def index():
 def post_Data():
     data = request.get_json()
     recognize_info = {'code': 200 ,'info':1,}
-    return jsonify(recognize_info), 201
+    return jsonify(recognize_info), 200
 
 if __name__ == '__main__':
     app.run(port=5000)
