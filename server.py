@@ -1,3 +1,4 @@
+# coding:utf-8 
 from flask import *
 from facedetect import excute
 import base64
