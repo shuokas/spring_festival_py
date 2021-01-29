@@ -87,7 +87,7 @@ def process(faces, moulds_path):
         face = faces[i]
         # x = random.randint(0, len(moulds)-1)
         # mould = moulds_path + '/' + moulds[x]
-        mould = moulds_path + '/7.png'
+        mould = moulds_path + '/8.png'
         seamless_im = swap(face, mould)
         seamless_ims.append(seamless_im)
     return seamless_ims
