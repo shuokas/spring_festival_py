@@ -59,7 +59,10 @@ def join(seamless_ims):
         result.paste(im, box=(temp, 0))
         temp += w
 
-    img = cv2.cvtColor(numpy.asarray(result), cv2.COLOR_RGB2BGR)
+    # img = cv2.cvtColor(numpy.asarray(result), cv2.COLOR_RGB2BGR)
+
+    img = cv2.cvtColor(numpy.asarray(image), cv2.COLOR_RGB2RGBA)
+
 
     return img
 
@@ -68,6 +71,7 @@ def get_moulds_path(sex, major, dgree):
     # path = 'static/moulds/%s/%s/%s' % (sex, major, dgree)
     path = 'static/moulds/'
     # 可以根据参数匹配不同的图片
+    # 根据用户选择的不同配置展示不同的人物基座
 
     # 人的模板
     return path
@@ -83,7 +87,7 @@ def process(faces, moulds_path):
         face = faces[i]
         # x = random.randint(0, len(moulds)-1)
         # mould = moulds_path + '/' + moulds[x]
-        mould = moulds_path + '/6.png'
+        mould = moulds_path + '/8.png'
         seamless_im = swap(face, mould)
         seamless_ims.append(seamless_im)
     return seamless_ims
@@ -147,8 +151,11 @@ def excute(list, sex, major, degree):
     seamless_ims = process(faces_, moulds_path)
 
     img = join(seamless_ims)
+    print(img)
+    # img_with_background = load_background(img)
+    img_with_background = Image.fromarray(img)
 
-    img_with_background = load_background(img)
+    # print(img_with_background)
 
     f = BytesIO()
 
