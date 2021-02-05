@@ -162,3 +162,47 @@ def excute(list, sex, major, degree):
     img_with_background.save(f, "png")
 
     return f
+
+# 拼接图片
+def join_img():
+
+    paths = [ './static/images/head1.png', './static/images/top1.png', './static/images/bottom1.png']
+    # img_array = ''
+    # img = ''
+    # for i, v in enumerate(paths):
+    #     if i == 0:
+    #         img = Image.open(v)  # 打开图片
+    #         img_array = numpy.array(img)  # 转化为np array对象
+    #     if i > 0:
+    #         img_array2 = numpy.array(Image.open(v))
+            
+    #         img_array = numpy.concatenate((img_array, img_array2), axis=0)  # 纵向拼接
+            
+    #         print(img_array)
+                
+    # f = BytesIO()
+
+    # img_array.save(f, "png")
+    
+    img1 = Image.open('./static/images/head1.png')  # 打开图片
+    img2 = Image.open('./static/images/head1.png')  # 打开图片
+    img3 = Image.open('./static/images/head1.png')  # 打开图片
+    img_array1 = numpy.array(img1)  # 转化为np array对象
+    img_array2 = numpy.array(img2)  # 转化为np array对象
+    img_array3 = numpy.array(img3)  # 转化为np array对象
+    
+    print(img_array1.shape)
+    print(img_array2.shape)
+    print(img_array3.shape)
+    img_result = numpy.concatenate((img_array1, img_array2, img_array3), axis=1)  # 纵向拼接
+    
+    img_result = Image.fromarray(img_result)
+    
+    f = BytesIO()
+    img_result.save(f, "png")
+    
+    numpy.savetxt(f, img_result) # 只支持1维或者2维数组，numpy数组转化成字节流
+    content = f.getvalue()  # 获取string字符串表示
+    print(img_result)
+    
+    return content

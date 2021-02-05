@@ -1,38 +1,164 @@
-# coding:utf-8 
+# coding:utf-8
 from flask import *
-from facedetect import excute
+from facedetect import excute, join_img
 import base64
 from flask_sqlalchemy import SQLAlchemy
 
-
-
 app = Flask(__name__)
 
-#设置连接数据库的URL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Ys258311!@#@39.106.93.128:3306/spring_festival'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Ys258311!@#@localhost/spring_festival'
- 
-#设置每次请求结束后会自动提交数据库中的改动
-app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-app.config['DEBUG'] = True
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-#查询时会显示原始SQL语句
-app.config['SQLALCHEMY_ECHO'] = True
+
+class Config(object):
+    """配置参数"""
+    # 设置连接数据库的URL
+    user = 'root'
+    password = 'Ys258311!@#'
+    database = 'spring_festival'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%s:%s@39.106.93.128:3306/%s' % (
+        user, password, database)
+
+    # 设置sqlalchemy自动更跟踪数据库
+    # SQLALCHEMY_TRACK_MODIFICATIONS = True
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+
+    # 查询时会显示原始SQL语句
+    app.config['SQLALCHEMY_ECHO'] = True
+
+    # 禁止自动提交数据处理
+    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+
+    app.debug = True
+
+
+# 读取配置
+app.config.from_object(Config)
+# 创建数据库sqlalchemy工具对象
 db = SQLAlchemy(app)
 
 # 类
+
 
 class ClothesComponents(db.Model):
     # 定义表名
     __tablename__ = 'ClothesComponents'
     # 定义字段
-    id = db.Column(db.Integer, primary_key=True)
+    part_id = db.Column(db.Integer, primary_key=True)
     thumbnailUrl = db.Column(db.String(255))
-    imgType = db.Column(db.String(255)) 
+    imgType = db.Column(db.String(255))
+    artworkUrl = db.Column(db.String(255))
+    sex = db.Column(db.Integer)
+
+# 家庭表
+class Family(db.Model):
+    # 定义表名
+    __tablename__ = 'Family'
+    # 定义字段
+    family_id = db.Column(db.Integer, primary_key=True)
+    family_count = db.Column(db.String(255))
+    baseInfo = db.Column(db.String(255))
     
+# 家庭表
+class UserPortrait(db.Model):
+    # 定义表名
+    __tablename__ = 'UserPortrait'
+    # 定义字段
+    user_id = db.Column(db.Integer, primary_key=True)
+    target_body = db.Column(db.String(255))
+    head_url = db.Column(db.String(255))
+    top_url = db.Column(db.String(255))
+    bottom_url = db.Column(db.String(255))
+    source_template = db.Column(db.String(255))
+
+# 第一步选择拍照类型时收集 人数 + 类型 + 微信号
+
+
+@app.route('/carryBaseInfo', methods=['POST'])
+def carryBaseInfo():
+    # 判断如果有id则更新选择的信息，没有id则新增
+    # if condition:
+    #       pass
+    family_count = request.json.get('family_count')
+    baseInfo = request.json.get('baseInfo')
+    # 插入一条角色数据
+    # family_info = Family(family_count=family_count,baseInfo=baseInfo)
+    # db.session.add(family_info)
+    # db.session.commit()
+    join_img()
+
+    print(family_count)
+    print(baseInfo)
+
+    response_info = {
+        'code': 200,
+        'message': '请求成功',
+        'data': {}
+    }
+    return jsonify(response_info), 200
+# 选择零件-获取具体图片
+
+
+@app.route('/getImgPartList', methods=['POST'])
+def get_img_part_list():
+    img_type = request.json.get('imgType')
+    img_sex = request.json.get('sex')
+    res_part = ClothesComponents.query.filter_by(imgType=img_type,sex=img_sex).all()
+    count = 0
+    first_row = []
+    second_row = []
+    for i in res_part:
+        print(i)
+        count += 1
+        if count % 2 > 0:
+            second_row.append({'part_id': i.part_id,
+                               'thumbnailUrl': i.thumbnailUrl,
+                               'type': i.imgType,
+                               'artworkUrl': i.artworkUrl,
+                               'sex': i.sex
+                               })
+        else:
+            first_row.append({'part_id': i.part_id,
+                              'thumbnailUrl': i.thumbnailUrl,
+                              'type': i.imgType,
+                              'artworkUrl': i.artworkUrl,
+                              'sex': i.sex
+                              })
+
+    response_info = {
+        'code': 200,
+        'message': '请求成功',
+        'data': {'first_row': first_row,
+                 'second_row': second_row
+                 }
+    }
+    return jsonify(response_info), 200
+
+
+# 第二步选择人物模板
+
+@app.route('/saveImageTemplate', methods=['POST'])
+def save_image_template():
+    # family_id,family_user_id,Weid,head,top,bottom
+    # 存入图片id，进行编辑回显数据  UserPortrait
+    head = request.json.get('head')
+    top = request.json.get('top')
+    bottom = request.json.get('bottom')
+    source_template = request.json.get('source_template')
+    
+    # template_info = Family(head=head,top=top,bottom=bottom,source_template=source_template,)
+    # db.session.add(template_info)
+    # db.session.commit()
+    print('合并模板图')
+    response_info = {
+        'code': 200,
+        'message': '请求成功',
+        'data': {'head':head,'top':top,'bottom':bottom,'source_template':source_template}
+    }
+    return jsonify(response_info), 200
+    
+
+
 @app.route('/swap', methods=['post'])
 def swap_page():
-    
+
     ims = request.files.getlist('file')
     sex = request.form.get('sex')
     major = request.form.get('major')
@@ -40,13 +166,16 @@ def swap_page():
 
     f = excute(ims, sex, major, degree)
     img_stream = base64.b64encode(f.getvalue()).decode()
-    recognize_info = {'code': 200 ,'message': '请求成功','data': {'img': img_stream}}
+    recognize_info = {'code': 200, 'message': '请求成功',
+                      'data': {'img': img_stream}}
     return jsonify(recognize_info), 200
     # return render_template('result.html', img_stream=img_stream)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/test', methods=['POST'])
 def post_Data():
@@ -54,14 +183,15 @@ def post_Data():
     print(ClothesComponents.query.all())
     data = []
     for i in images:
-        print(i.id)
+        print(i.part_id)
         print(i.thumbnailUrl)
         print(i.imgType)
-        data.append({'id': i.id,'url':i.thumbnailUrl,'type':i.imgType})
-        
+        data.append({'id': i.part_id, 'url': i.thumbnailUrl, 'type': i.imgType})
+
     # data = request.get_json()
-    recognize_info = {'code': 200 ,'data':data,}
+    recognize_info = {'code': 200, 'data': data, }
     return jsonify(recognize_info), 200
+
 
 if __name__ == '__main__':
     app.run(port=5000)
