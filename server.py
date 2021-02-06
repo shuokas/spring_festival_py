@@ -4,6 +4,7 @@ from facedetect import excute, join_img
 import base64
 import pymysql
 from flask_sqlalchemy import SQLAlchemy
+pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
 
