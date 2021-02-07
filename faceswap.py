@@ -1,6 +1,7 @@
 import cv2
 import dlib
 import numpy as np
+from PIL import Image
 
 predictor_path = 'static/shape_predictor_68_face_landmarks.dat' # 模型路径
 
@@ -61,13 +62,22 @@ def get_mask_union(mask1, mask2):
 
 def swap(im1, face_path):
     # filename = image_face_path.split('/')[-1].split('.')[0]
-
+    print('im1^^^^^^^^^^^^^^^^^',im1)
     im1 = cv2.resize(im1, (600, im1.shape[0] * 600 // im1.shape[1]))
+    
     landmarks1 = get_face_landmarks(im1, detector, predictor)  # 68_face_landmarks
     im1_size = get_image_size(im1)  # 脸图大小
     im1_mask = get_face_mask(im1_size, landmarks1)  # 脸图人脸掩模
 
-    im2 =cv2.imread(face_path)  # camera_image
+    # im2 =cv2.imread(face_path)  # camera_image
+    im2 = face_path
+    print('pic??????????????????',face_path)
+    # for l in face_path:
+    #     pic = Image.open(l)
+    #     img = cv2.cvtColor(np.asarray(pic), cv2.COLOR_RGB2BGR)
+    #     im2.append(img)
+    # im2 = face_path
+    print('im2**********',im2)
     landmarks2 = get_face_landmarks(im2, detector, predictor)  # 68_face_landmarks
     im2_size = get_image_size(im2)  # 模板图大小
     im2_mask = get_face_mask(im2_size, landmarks2)  # 模板图片人脸掩模

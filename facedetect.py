@@ -3,9 +3,11 @@ import cv2
 from PIL import Image
 from io import BytesIO
 from faceswap import swap
+import base64
 import numpy
 import os
 import random
+import re
 
 
 def detect(img):
@@ -25,6 +27,15 @@ def detect(img):
         faces.append(face)
     return faces
 
+def base64_to_image(base64_str, image_path=None):
+    base64_data = re.sub('^data:image/.+;base64,', '', base64_str)
+    byte_data = base64.b64decode(base64_data)
+    # print(byte_data)
+    image_data = BytesIO(byte_data)
+    img = Image.open(image_data)
+    if image_path:
+        img.save(image_path)
+    return img
 
 def save_temp_imgs(list):
     temp_imgs = []
@@ -32,13 +43,12 @@ def save_temp_imgs(list):
         pic = Image.open(l)
         img = cv2.cvtColor(numpy.asarray(pic), cv2.COLOR_RGB2BGR)
         temp_imgs.append(img)
-
     return temp_imgs
 
 
 def join(seamless_ims):
     ims = []
-
+    print('seamless_ims**********',seamless_ims)
     for seamless_im in seamless_ims:
         image = Image.fromarray(cv2.cvtColor(seamless_im, cv2.COLOR_BGR2RGB))
         ims.append(image)
@@ -47,7 +57,8 @@ def join(seamless_ims):
     for im in ims:
         w, height = im.size
         width += w
-
+        
+    print(ims)
     # 创建空白长图
     result = Image.new(ims[0].mode, (width, height))
 
@@ -61,13 +72,13 @@ def join(seamless_ims):
 
     # img = cv2.cvtColor(numpy.asarray(result), cv2.COLOR_RGB2BGR)
 
-    img = cv2.cvtColor(numpy.asarray(image), cv2.COLOR_RGB2RGBA)
+    img = cv2.cvtColor(numpy.asarray(result), cv2.COLOR_RGB2RGBA)
 
 
     return img
 
 
-def get_moulds_path(sex, major, dgree):
+def get_moulds_path():
     # path = 'static/moulds/%s/%s/%s' % (sex, major, dgree)
     path = 'static/moulds/'
     # 可以根据参数匹配不同的图片
@@ -77,19 +88,29 @@ def get_moulds_path(sex, major, dgree):
     return path
 
 
-def process(faces, moulds_path):
+def process(faces, target_template):
     seamless_ims = []
 
     # moulds = os.listdir(moulds_path)
-
+    # print('moulds_path**********',moulds_path)
     n = len(faces)
     for i in range(n):
         face = faces[i]
         # x = random.randint(0, len(moulds)-1)
         # mould = moulds_path + '/' + moulds[x]
-        mould = moulds_path + '/8.png'
-        seamless_im = swap(face, mould)
+        # mould = target_template + '/8.png'
+        print('face**********',face)
+        print('target_template**********',target_template)
+        # 将mould 改为文件
+        # pic = base64_to_image(target_template)
+        # img = cv2.cvtColor(numpy.asarray(pic), cv2.COLOR_RGB2BGR)
+        # temp_imgs.append(img)
+        
+        # 模板图（原图->模板）
+        seamless_im = swap(face, target_template)
+        
         seamless_ims.append(seamless_im)
+        
     return seamless_ims
 
 
@@ -133,26 +154,42 @@ def load_background(img):
     return img_with_background
 
 
-def excute(list, sex, major, degree):
-    print(list)
-    paths = save_temp_imgs(list)
-
-
-    print(paths)
+def excute(sourceFile, targetFile):
+    # print(list)
+    paths = save_temp_imgs(sourceFile)
+    print('paths**********',paths)
     faces_ = []
-
     for path in paths:
+        print('path***********',path)
         faces = detect(path)
         faces_ += faces
 
     # 人物固定了（如果做更换脸型、发型可根据此改造）
-    moulds_path = get_moulds_path(sex, major, degree)
-
-    seamless_ims = process(faces_, moulds_path)
+    # 路径
+    print(faces)
+    # 转换为文件
+    print('*********************tttatgasda',base64_to_image(targetFile))
+    moulds_path = get_moulds_path()
+    print('type@@@@@@@@@@@@@@@@@@',type(targetFile))
+    
+    img_data = base64.b64decode(targetFile)
+    # print('img_data*********',img_data)
+    nparr = numpy.fromstring(img_data, numpy.uint8)
+    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    print('nparr@#@#@#@#@#@#',img_np)
+    # 读取图片（可以做成直接读取服务器）
+    print('faces_*********',faces_)
+    
+    # seamless_ims = process(faces_, moulds_path)
+    seamless_ims = process(faces_, img_np)
+    print('seamless_ims!!!!!!!!!!!!!!!!!!!!!!!!!!!',seamless_ims)
+    print('np.uint8(img)*******',numpy.uint8(seamless_ims))
+    # seamless_ims = process(faces_, base64_to_image(targetFile))
 
     img = join(seamless_ims)
-    print(img)
+    # print(img)
     # img_with_background = load_background(img)
+    # 读取背景转换为fromarray
     img_with_background = Image.fromarray(img)
 
     # print(img_with_background)
@@ -162,47 +199,3 @@ def excute(list, sex, major, degree):
     img_with_background.save(f, "png")
 
     return f
-
-# 拼接图片
-def join_img():
-
-    paths = [ './static/images/head1.png', './static/images/top1.png', './static/images/bottom1.png']
-    # img_array = ''
-    # img = ''
-    # for i, v in enumerate(paths):
-    #     if i == 0:
-    #         img = Image.open(v)  # 打开图片
-    #         img_array = numpy.array(img)  # 转化为np array对象
-    #     if i > 0:
-    #         img_array2 = numpy.array(Image.open(v))
-            
-    #         img_array = numpy.concatenate((img_array, img_array2), axis=0)  # 纵向拼接
-            
-    #         print(img_array)
-                
-    # f = BytesIO()
-
-    # img_array.save(f, "png")
-    
-    img1 = Image.open('./static/images/head1.png')  # 打开图片
-    img2 = Image.open('./static/images/head1.png')  # 打开图片
-    img3 = Image.open('./static/images/head1.png')  # 打开图片
-    img_array1 = numpy.array(img1)  # 转化为np array对象
-    img_array2 = numpy.array(img2)  # 转化为np array对象
-    img_array3 = numpy.array(img3)  # 转化为np array对象
-    
-    print(img_array1.shape)
-    print(img_array2.shape)
-    print(img_array3.shape)
-    img_result = numpy.concatenate((img_array1, img_array2, img_array3), axis=1)  # 纵向拼接
-    
-    img_result = Image.fromarray(img_result)
-    
-    f = BytesIO()
-    img_result.save(f, "png")
-    
-    numpy.savetxt(f, img_result) # 只支持1维或者2维数组，numpy数组转化成字节流
-    content = f.getvalue()  # 获取string字符串表示
-    print(img_result)
-    
-    return content
