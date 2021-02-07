@@ -1,9 +1,10 @@
 # coding:utf-8
 from flask import *
-from facedetect import excute, join_img
+from facedetect import excute
 import base64
 import pymysql
 from flask_sqlalchemy import SQLAlchemy
+
 pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
@@ -50,6 +51,8 @@ class ClothesComponents(db.Model):
     sex = db.Column(db.Integer)
 
 # 家庭表
+
+
 class Family(db.Model):
     # 定义表名
     __tablename__ = 'Family'
@@ -57,8 +60,10 @@ class Family(db.Model):
     family_id = db.Column(db.Integer, primary_key=True)
     family_count = db.Column(db.String(255))
     baseInfo = db.Column(db.String(255))
-    
+
 # 家庭表
+
+
 class UserPortrait(db.Model):
     # 定义表名
     __tablename__ = 'UserPortrait'
@@ -68,6 +73,7 @@ class UserPortrait(db.Model):
     head_url = db.Column(db.String(255))
     top_url = db.Column(db.String(255))
     bottom_url = db.Column(db.String(255))
+    sex = db.Column(db.Integer)
     source_template = db.Column(db.String(255))
 
 # 第一步选择拍照类型时收集 人数 + 类型 + 微信号
@@ -84,7 +90,7 @@ def carryBaseInfo():
     # family_info = Family(family_count=family_count,baseInfo=baseInfo)
     # db.session.add(family_info)
     # db.session.commit()
-    join_img()
+    # join_img(
 
     print(family_count)
     print(baseInfo)
@@ -102,7 +108,8 @@ def carryBaseInfo():
 def get_img_part_list():
     img_type = request.json.get('imgType')
     img_sex = request.json.get('sex')
-    res_part = ClothesComponents.query.filter_by(imgType=img_type,sex=img_sex).all()
+    res_part = ClothesComponents.query.filter_by(
+        imgType=img_type, sex=img_sex).all()
     count = 0
     first_row = []
     second_row = []
@@ -145,33 +152,59 @@ def save_image_template():
     bottom = request.json.get('bottom')
     source_template = request.json.get('source_template')
     
-    # template_info = Family(head=head,top=top,bottom=bottom,source_template=source_template,)
+    # swap_img = swap_page(source_template)
+    swap_img = 'swap_page(source_template)'
+    template_info = UserPortrait(head_url=head,top_url=top,bottom_url=bottom,source_template=source_template,)
+    # res = UserPortrait.query.all()
+    UserPortrait.query.filter_by(user_id=1).update({
+        'head_url': head,
+        'top_url': top,
+        'bottom_url': bottom,
+        'source_template': source_template,
+        })
+    # for i in res:
+    #     print(i.sex)
+    #     print(i.target_body)
+    # user_id = db.Column(db.Integer, primary_key=True)
+    # target_body = db.Column(db.String(255))
     # db.session.add(template_info)
     # db.session.commit()
+
     print('合并模板图')
     response_info = {
         'code': 200,
         'message': '请求成功',
-        'data': {'head':head,'top':top,'bottom':bottom,'source_template':source_template}
+        'data': {'head': head, 'top': top, 'bottom': bottom, 'source_template': source_template, 'transform_img': swap_img}
+    }
+    return jsonify(response_info), 200
+
+# 读取人物模板
+@app.route('/bodyTemplate', methods=['POST'])
+def load_template():
+    res_part = UserPortrait.query.filter_by(user_id=1).all()
+    
+    for i in res_part:
+        result = str(i.source_template)
+        
+    response_info = {
+        'code': 200,
+        'message': '请求成功',
+        'data': result
     }
     return jsonify(response_info), 200
     
+@app.route('/swapFace', methods=['POST'])
+def swap_face():
 
-
-@app.route('/swap', methods=['post'])
-def swap_page():
-
-    ims = request.files.getlist('file')
-    sex = request.form.get('sex')
-    major = request.form.get('major')
-    degree = request.form.get('degree')
-
-    f = excute(ims, sex, major, degree)
+    sourceFile = request.files.getlist('sourceFile')
+    targetFile = request.form.get('targetFile')
+    print('sourceFile******************',sourceFile)
+    f = excute(sourceFile,targetFile)
     img_stream = base64.b64encode(f.getvalue()).decode()
-    recognize_info = {'code': 200, 'message': '请求成功',
-                      'data': {'img': img_stream}}
-    return jsonify(recognize_info), 200
-    # return render_template('result.html', img_stream=img_stream)
+    
+    result_info = {'code': 200, 'message': '请求成功',
+                      'data': img_stream}
+    return jsonify(result_info), 200
 
 
 @app.route('/')
@@ -188,12 +221,12 @@ def post_Data():
         print(i.part_id)
         print(i.thumbnailUrl)
         print(i.imgType)
-        data.append({'id': i.part_id, 'url': i.thumbnailUrl, 'type': i.imgType})
+        data.append(
+            {'id': i.part_id, 'url': i.thumbnailUrl, 'type': i.imgType})
 
     # data = request.get_json()
     recognize_info = {'code': 200, 'data': data, }
     return jsonify(recognize_info), 200
-
 
 if __name__ == '__main__':
     app.run(port=5000)
