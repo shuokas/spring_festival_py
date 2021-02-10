@@ -11,6 +11,7 @@ predictor = dlib.shape_predictor(predictor_path)  # dlib的人脸形状检测器
 
 def get_image_size(image):
     image_size = (image.shape[0], image.shape[1])
+    # image_size = (300, 400)
     return image_size
 
 
@@ -54,6 +55,8 @@ def get_mask_center_point(image_mask):
 
 
 def get_mask_union(mask1, mask2):
+    print('mask1',mask1)
+    print('mask2',mask2)
     mask = np.min([mask1, mask2], axis=0)  # 掩盖部分并集
     mask = ((cv2.blur(mask, (3, 3)) == 255) * 255).astype(np.uint8)  # 缩小掩模大小
     mask = cv2.blur(mask, (5, 5)).astype(np.uint8)  # 模糊掩模
@@ -63,6 +66,7 @@ def get_mask_union(mask1, mask2):
 def swap(im1, face_path):
     # filename = image_face_path.split('/')[-1].split('.')[0]
     print('im1^^^^^^^^^^^^^^^^^',im1)
+    print('im1.shape[0]^^^^^^^^^^^^^^^^^',im1.shape[0])
     im1 = cv2.resize(im1, (600, im1.shape[0] * 600 // im1.shape[1]))
     
     landmarks1 = get_face_landmarks(im1, detector, predictor)  # 68_face_landmarks
@@ -77,6 +81,7 @@ def swap(im1, face_path):
     #     img = cv2.cvtColor(np.asarray(pic), cv2.COLOR_RGB2BGR)
     #     im2.append(img)
     # im2 = face_path
+    
     print('im2**********',im2)
     landmarks2 = get_face_landmarks(im2, detector, predictor)  # 68_face_landmarks
     im2_size = get_image_size(im2)  # 模板图大小

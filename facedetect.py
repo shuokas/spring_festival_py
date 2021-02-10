@@ -51,22 +51,28 @@ def join(seamless_ims):
     print('seamless_ims**********',seamless_ims)
     for seamless_im in seamless_ims:
         image = Image.fromarray(cv2.cvtColor(seamless_im, cv2.COLOR_BGR2RGB))
+        # is_width = 300
+        # is_height = 400
+        # image.resize((is_width,is_height))
         ims.append(image)
 
     width = 0
     for im in ims:
         w, height = im.size
         width += w
-        
-    print(ims)
+    
+    print('width*************',width)
+    print('height************',height)
+    print('ims************',ims[0].mode)
     # 创建空白长图
-    result = Image.new(ims[0].mode, (width, height))
+    result = Image.new(ims[0].mode, (width, height),(255,255,255))
 
-
+    print('ims*****************',ims)
     # 拼接图片
     temp = 0
     for im in ims:
         w, height = im.size
+        print('temp@@@@@@@@@',temp)
         result.paste(im, box=(temp, 0))
         temp += w
 
@@ -181,6 +187,7 @@ def excute(sourceFile, targetFile):
     print('faces_*********',faces_)
     
     # seamless_ims = process(faces_, moulds_path)
+    # faces_原图，img_np 模板图
     seamless_ims = process(faces_, img_np)
     print('seamless_ims!!!!!!!!!!!!!!!!!!!!!!!!!!!',seamless_ims)
     print('np.uint8(img)*******',numpy.uint8(seamless_ims))
@@ -193,9 +200,24 @@ def excute(sourceFile, targetFile):
     img_with_background = Image.fromarray(img)
 
     # print(img_with_background)
-
+    print('img_with_background',img_with_background)
     f = BytesIO()
 
     img_with_background.save(f, "png")
+    print('fffffffffffffffffffffff',f)
+    # with open("imageToSave.png", "wb") as fh:
+    #     fh.write(base64.decodebytes(img_with_background))
 
+    img = Image.open(f)
+    img = img.convert('RGBA') 
+    W, H = img.size 
+    white_pixel = (0, 0, 0, 255)  
+    for h in range(W):   ###循环图片的每个像素点
+        for l in range(H):  
+            if img.getpixel((h,l)) == white_pixel:  
+                img.putpixel((h,l),(0,0,0,0))
+    f = BytesIO()
+
+    img.save(f, "png")
+    print('newImg@@@@@@@@@@@@@',img)
     return f

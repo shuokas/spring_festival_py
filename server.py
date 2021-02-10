@@ -4,6 +4,7 @@ from facedetect import excute
 import base64
 import pymysql
 from flask_sqlalchemy import SQLAlchemy
+import time
 
 pymysql.install_as_MySQLdb()
 
@@ -37,7 +38,7 @@ app.config.from_object(Config)
 # 创建数据库sqlalchemy工具对象
 db = SQLAlchemy(app)
 
-# 类
+# 衣服模板类
 
 
 class ClothesComponents(db.Model):
@@ -61,7 +62,7 @@ class Family(db.Model):
     family_count = db.Column(db.String(255))
     baseInfo = db.Column(db.String(255))
 
-# 家庭表
+# 用户生成结果表
 
 
 class UserPortrait(db.Model):
@@ -75,6 +76,17 @@ class UserPortrait(db.Model):
     bottom_url = db.Column(db.String(255))
     sex = db.Column(db.Integer)
     source_template = db.Column(db.String(255))
+
+# 用户表
+
+
+class FamilyUser(db.Model):
+    # 定义表名
+    __tablename__ = 'FamilyUser'
+    # 定义字段
+    user_id = db.Column(db.Integer, primary_key=True)
+    family_id = db.Column(db.Integer)
+    uuid = db.Column(db.Integer)
 
 # 第一步选择拍照类型时收集 人数 + 类型 + 微信号
 
@@ -151,17 +163,24 @@ def save_image_template():
     top = request.json.get('top')
     bottom = request.json.get('bottom')
     source_template = request.json.get('source_template')
+    sex = request.json.get('sex')
+    uuid = request.json.get('uuid')
     
-    # swap_img = swap_page(source_template)
-    swap_img = 'swap_page(source_template)'
-    template_info = UserPortrait(head_url=head,top_url=top,bottom_url=bottom,source_template=source_template,)
+    # template_info = UserPortrait(
+    #     head_url=head, top_url=top, bottom_url=bottom, source_template=source_template,sex=sex)
     # res = UserPortrait.query.all()
-    UserPortrait.query.filter_by(user_id=1).update({
+    
+    user_info = FamilyUser.query.filter_by(uuid=uuid).first()
+    user_id = user_info.user_id
+    # print(UserPortrait.query.filter_by(user_id=user_id).first())
+    UserPortrait.query.filter_by(user_id=user_id).update({
         'head_url': head,
         'top_url': top,
         'bottom_url': bottom,
         'source_template': source_template,
-        })
+        'sex': sex
+    })
+
     # for i in res:
     #     print(i.sex)
     #     print(i.target_body)
@@ -169,41 +188,77 @@ def save_image_template():
     # target_body = db.Column(db.String(255))
     # db.session.add(template_info)
     # db.session.commit()
-
-    print('合并模板图')
     response_info = {
         'code': 200,
         'message': '请求成功',
-        'data': {'head': head, 'top': top, 'bottom': bottom, 'source_template': source_template, 'transform_img': swap_img}
+        'data': {'head': head, 'top': top, 'bottom': bottom, 'source_template': source_template, }
+        # 'transform_img': swap_img
     }
     return jsonify(response_info), 200
 
 # 读取人物模板
+
 @app.route('/bodyTemplate', methods=['POST'])
 def load_template():
-    res_part = UserPortrait.query.filter_by(user_id=1).all()
+    uuid = request.json.get('uuid')
+    user_info = FamilyUser.query.filter_by(uuid=uuid).first()
+    user_id = user_info.user_id
     
+    res_part = UserPortrait.query.filter_by(user_id=user_id).all()
+    result = ''
     for i in res_part:
         result = str(i.source_template)
-        
+
     response_info = {
         'code': 200,
         'message': '请求成功',
         'data': result
     }
     return jsonify(response_info), 200
-    
+
+
 @app.route('/swapFace', methods=['POST'])
 def swap_face():
 
     sourceFile = request.files.getlist('sourceFile')
     targetFile = request.form.get('targetFile')
-    print('sourceFile******************',sourceFile)
-    f = excute(sourceFile,targetFile)
+    print('sourceFile******************', sourceFile)
+    f = excute(sourceFile, targetFile)
     img_stream = base64.b64encode(f.getvalue()).decode()
-    
+
     result_info = {'code': 200, 'message': '请求成功',
-                      'data': img_stream}
+                   'data': img_stream}
+    return jsonify(result_info), 200
+
+# 保存用户id
+
+
+@app.route('/saveUserInfo', methods=['POST'])
+def save_user_info():
+    uuid = request.json.get('uuid')
+    family_count = request.json.get('family_count')
+    # 查询数据库，如果存在 则加入，不存在则创建
+    # 先查询家庭id是否存在。如果不存在，先操作家庭数据
+    # 精确查找用的first
+    user_result = FamilyUser.query.filter_by(uuid=uuid).first()
+    family_id = user_result.family_id
+
+    if family_id:
+        print('有')
+    else:
+        family_info = Family(family_count=family_count)
+        db.session.add(family_info)
+        db.session.commit()
+
+    if user_result:
+        print('有')
+    else:
+        user_info = FamilyUser(family_id=family_id, uuid=uuid)
+        db.session.add(user_info)
+        db.session.commit()
+    data = []
+    result_info = {'code': 200, 'message': '请求成功',
+                   'data': data}
     return jsonify(result_info), 200
 
 
@@ -214,19 +269,24 @@ def index():
 
 @app.route('/test', methods=['POST'])
 def post_Data():
-    images = ClothesComponents.query.all()
-    print(ClothesComponents.query.all())
-    data = []
-    for i in images:
-        print(i.part_id)
-        print(i.thumbnailUrl)
-        print(i.imgType)
-        data.append(
-            {'id': i.part_id, 'url': i.thumbnailUrl, 'type': i.imgType})
-
+    # images = ClothesComponents.query.all()
+    # print(ClothesComponents.query.all())
+    # data = []
+    # for i in images:
+    #     print(i.part_id)
+    #     print(i.thumbnailUrl)
+    #     print(i.imgType)
+    #     data.append(
+    #         {'id': i.part_id, 'url': i.thumbnailUrl, 'type': i.imgType})
+    test = request.json.get('test')
+    print(test)
     # data = request.get_json()
+    data = {
+        'test': test
+    }
     recognize_info = {'code': 200, 'data': data, }
     return jsonify(recognize_info), 200
+
 
 if __name__ == '__main__':
     app.run(port=5000)
