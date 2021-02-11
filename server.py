@@ -173,7 +173,8 @@ def save_image_template():
     user_info = FamilyUser.query.filter_by(uuid=uuid).first()
     user_id = user_info.user_id
     # print(UserPortrait.query.filter_by(user_id=user_id).first())
-    UserPortrait.query.filter_by(user_id=user_id).update({
+    # 固定查询
+    UserPortrait.query.filter_by(user_id=8).update({
         'head_url': head,
         'top_url': top,
         'bottom_url': bottom,
