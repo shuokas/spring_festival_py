@@ -165,11 +165,11 @@ def save_image_template():
     source_template = request.json.get('source_template')
     sex = request.json.get('sex')
     uuid = request.json.get('uuid')
-    
+
     # template_info = UserPortrait(
     #     head_url=head, top_url=top, bottom_url=bottom, source_template=source_template,sex=sex)
     # res = UserPortrait.query.all()
-    
+
     user_info = FamilyUser.query.filter_by(uuid=uuid).first()
     user_id = user_info.user_id
     # print(UserPortrait.query.filter_by(user_id=user_id).first())
@@ -198,12 +198,13 @@ def save_image_template():
 
 # 读取人物模板
 
+
 @app.route('/bodyTemplate', methods=['POST'])
 def load_template():
     uuid = request.json.get('uuid')
     user_info = FamilyUser.query.filter_by(uuid=uuid).first()
     user_id = user_info.user_id
-    
+
     res_part = UserPortrait.query.filter_by(user_id=user_id).all()
     result = ''
     for i in res_part:
@@ -235,27 +236,39 @@ def swap_face():
 
 @app.route('/saveUserInfo', methods=['POST'])
 def save_user_info():
-    uuid = request.json.get('uuid')
-    family_count = request.json.get('family_count')
-    # 查询数据库，如果存在 则加入，不存在则创建
-    # 先查询家庭id是否存在。如果不存在，先操作家庭数据
-    # 精确查找用的first
-    user_result = FamilyUser.query.filter_by(uuid=uuid).first()
-    family_id = user_result.family_id
+    # uuid = request.json.get('uuid')
+    # family_count = request.json.get('family_count')
+    # # 查询数据库，如果存在 则加入，不存在则创建
+    # # 先查询家庭id是否存在。如果不存在，先操作家庭数据
+    # # 精确查找用的first
 
-    if family_id:
-        print('有')
-    else:
-        family_info = Family(family_count=family_count)
-        db.session.add(family_info)
-        db.session.commit()
+    # user_result = FamilyUser.query.filter_by(uuid=uuid).first()
+    # print('222222222222',user_result)
+    # # 存在uuid
+    # if user_result:
+    #     family_id = user_result.family_id
+    #     if family_id:
+    #         print('有，直接uodata')
+    #         print(family_id)
+    #     else:
+    #         # 有uuid 没有family的情况则创建一条family数据
+    #         family_info = Family(family_count=family_count)
+    #         db.session.add(family_info)
+    #         db.session.commit()
+    # else:
+    #     print('否则')
+        # 未找到数据时的情况(没有的话则创建)
+        # user_info = FamilyUser(uuid=uuid)
+        # family_info = Family(family_count=family_count)
+        
+        # db.session.add(user_info)
+        # db.session.add(family_info)
+        # # 创建uuid的时候同步创建familyid
+        
+        # db.session.commit()
+        
 
-    if user_result:
-        print('有')
-    else:
-        user_info = FamilyUser(family_id=family_id, uuid=uuid)
-        db.session.add(user_info)
-        db.session.commit()
+
     data = []
     result_info = {'code': 200, 'message': '请求成功',
                    'data': data}
